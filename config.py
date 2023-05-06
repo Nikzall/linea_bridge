@@ -1,5 +1,6 @@
 RPC = {
-    'goerli': 'https://eth.llamarpc.com'
+    'goerli': 'https://eth.llamarpc.com',
+    'bnb_testnet': 'https://data-seed-prebsc-1-s1.binance.org:8545',
 }
 
 # Время ожидания между выполнением разных акков рандомное в указанном диапазоне

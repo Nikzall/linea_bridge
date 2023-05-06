@@ -9,10 +9,93 @@ from config import *
 import random
 
 node = RPC['goerli']
+node_bnb = RPC['bnb_testnet']
 gasPriceLimit = GAS_PRICE_LIMIT
 
 w3 = Web3(Web3.HTTPProvider(node))
+w3_bnb = Web3(Web3.HTTPProvider(node_bnb))
 
+#---------------------------------------bnb transactions
+def bnb_bridge(account, name):
+    print(f"[{ctime(time.time())}]:starting bnb brdidge with wallet {name}")
+    chaindId = 59140
+    mintAccount = account.address
+    amount = w3_bnb.toWei(0.01, "ether")
+    nonce = int(time.time())
+    function_name = "depositNative"
+    params_type = "uint256", "uint64",  "address", "uint64"
+    function_selector = function_signature_to_4byte_selector(f"{function_name}({','.join(params_type)})")
+    function_params = amount, chaindId, mintAccount, nonce
+    encoded_params = encode(params_type, function_params)
+    transaction_data = "0x" + function_selector.hex() + encoded_params.hex()
+    tx = {
+        "from": account.address,
+        "to": w3_bnb.toChecksumAddress("0x62d06e1e3c6C202B60BE4c0E03ea8d6fcA88165f"),
+        "gasPrice": int(w3_bnb.eth.gas_price*1.2),
+        "nonce": w3_bnb.eth.get_transaction_count(account.address),
+        "data": transaction_data,
+        "value": w3_bnb.toWei(0.01, "ether")
+    }
+    try:
+        tx['gas'] = w3_bnb.eth.estimate_gas(tx)
+        signed_tx = account.sign_transaction(tx)
+        signed_transfer_hash = w3_bnb.eth.send_raw_transaction(signed_tx.rawTransaction)
+        print(f"[{ctime(time.time())}]:sent bnb bridge transaction with hash {signed_transfer_hash.hex()}, from wallet {name}")
+    except Exception as e:
+        print(f"[{ctime(time.time())}]:error {e} while estimating gas for {name} during bnb bridge")
+    time.sleep(random.uniform(NEXT_TX_MIN_WAIT_TIME,NEXT_TX_MAX_WAIT_TIME))
+
+def busd_approve(account, name):
+    print(f"[{ctime(time.time())}]:starting busd approve with wallet {name}")
+    tx = {
+        "from": account.address,
+        "to": w3_bnb.toChecksumAddress("0xeb3eb991d39dac92616da64b7c6d5af5ccff1627"),
+        "gasPrice": int(w3_bnb.eth.gas_price*1.2),
+        "nonce": w3_bnb.eth.get_transaction_count(account.address),
+        "data": "0x095ea7b300000000000000000000000062d06e1e3c6c202b60be4c0e03ea8d6fca88165fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    }
+    try:
+        tx['gas'] = w3_bnb.eth.estimate_gas(tx)
+        signed_tx = account.sign_transaction(tx)
+        signed_transfer_hash = w3_bnb.eth.send_raw_transaction(signed_tx.rawTransaction)
+        print(f"[{ctime(time.time())}]:sent busd approve with hash {signed_transfer_hash.hex()}, from wallet {name}")
+    except Exception as e:
+        print(f"[{ctime(time.time())}]:error {e} while estimating gas for {name} during busd approve")
+    time.sleep(random.uniform(NEXT_TX_MIN_WAIT_TIME,NEXT_TX_MAX_WAIT_TIME))
+
+def busd_bridge(account, name):
+    print(f"[{ctime(time.time())}]:starting bnb brdidge with wallet {name}")
+    token_address = "0xeB3Eb991D39Dac92616da64b7c6D5af5cCFf1627",
+    amount = 100000000000000000000
+    chaindId = 59140
+    mintAccount = account.address
+    amount = w3_bnb.toWei(0.01, "ether")
+    nonce = int(time.time())
+    function_name = "deposit"
+    params_type = "address", "uint256", "uint64",  "address", "uint64"
+    function_selector = function_signature_to_4byte_selector(f"{function_name}({','.join(params_type)})")
+    function_params = token_address, amount, chaindId, mintAccount, nonce
+    encoded_params = encode(params_type, function_params)
+    transaction_data = "0x" + function_selector.hex() + encoded_params.hex()
+    tx = {
+        "from": account.address,
+        "to": w3_bnb.toChecksumAddress("0x62d06e1e3c6C202B60BE4c0E03ea8d6fcA88165f"),
+        "gasPrice": int(w3_bnb.eth.gas_price*1.2),
+        "nonce": w3_bnb.eth.get_transaction_count(account.address),
+        "data": transaction_data,
+        "value": 0
+    }
+    try:
+        tx['gas'] = w3_bnb.eth.estimate_gas(tx)
+        signed_tx = account.sign_transaction(tx)
+        signed_transfer_hash = w3_bnb.eth.send_raw_transaction(signed_tx.rawTransaction)
+        print(f"[{ctime(time.time())}]:sent bnb bridge transaction with hash {signed_transfer_hash.hex()}, from wallet {name}")
+    except Exception as e:
+        print(f"[{ctime(time.time())}]:error {e} while estimating gas for {name} during bnb bridge")
+    time.sleep(random.uniform(NEXT_TX_MIN_WAIT_TIME,NEXT_TX_MAX_WAIT_TIME))
+#-------------------------------------------------------
+
+#---------------------------------------goerli transactions
 def dai_mint(account, name):
     while True:
         if w3.eth.gas_price<gasPriceLimit:
@@ -30,7 +113,7 @@ def dai_mint(account, name):
                 tx['gas'] = w3.eth.estimate_gas(tx)
                 signed_tx = account.sign_transaction(tx)
                 signed_transfer_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
-                print(f"[{ctime(time.time())}]:sent dai mint transaction with hash {signed_transfer_hash}, from wallet {name}")
+                print(f"[{ctime(time.time())}]:sent dai mint transaction with hash {signed_transfer_hash.hex()}, from wallet {name}")
             except Exception as e:
                 print(f"[{ctime(time.time())}]:error {e} while estimating gas for {name} during dai mint")
             time.sleep(random.uniform(NEXT_TX_MIN_WAIT_TIME,NEXT_TX_MAX_WAIT_TIME))
@@ -53,7 +136,7 @@ def dai_approve(account, name):
                 tx['gas'] = w3.eth.estimate_gas(tx)
                 signed_tx = account.sign_transaction(tx)
                 signed_transfer_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
-                print(f"[{ctime(time.time())}]:sent dai approve with hash {signed_transfer_hash}, from wallet {name}")
+                print(f"[{ctime(time.time())}]:sent dai approve with hash {signed_transfer_hash.hex()}, from wallet {name}")
             except Exception as e:
                 print(f"[{ctime(time.time())}]:error {e} while estimating gas for {name} during dai approve")
             time.sleep(random.uniform(NEXT_TX_MIN_WAIT_TIME,NEXT_TX_MAX_WAIT_TIME))
@@ -91,7 +174,7 @@ def dai_bridge(account, name):
                 tx['gas'] = GAS_LIMIT_FOR_GOERLI_BRIDGE
                 signed_tx = account.sign_transaction(tx)
                 signed_transfer_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
-                print(f"[{ctime(time.time())}]:sent dai bridge transaction with hash {signed_transfer_hash}, from wallet {name}")
+                print(f"[{ctime(time.time())}]:sent dai bridge transaction with hash {signed_transfer_hash.hex()}, from wallet {name}")
             except Exception as e:
                 print(f"[{ctime(time.time())}]:error {e} while estimating gas for {name} during dai bridge")
             time.sleep(random.uniform(NEXT_TX_MIN_WAIT_TIME,NEXT_TX_MAX_WAIT_TIME))
@@ -116,7 +199,7 @@ def hop_mint(account, name):
                 tx['gas'] = w3.eth.estimate_gas(tx)
                 signed_tx = account.sign_transaction(tx)
                 signed_transfer_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
-                print(f"[{ctime(time.time())}]:sent hop mint with hash {signed_transfer_hash}, from wallet {name}")
+                print(f"[{ctime(time.time())}]:sent hop mint with hash {signed_transfer_hash.hex()}, from wallet {name}")
             except Exception as e:
                 print(f"[{ctime(time.time())}]:error {e} while estimating gas for {name} during hop mint")
             time.sleep(random.uniform(NEXT_TX_MIN_WAIT_TIME,NEXT_TX_MAX_WAIT_TIME))
@@ -139,7 +222,7 @@ def hop_approve(account, name):
                 tx['gas'] = w3.eth.estimate_gas(tx)
                 signed_tx = account.sign_transaction(tx)
                 signed_transfer_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
-                print(f"[{ctime(time.time())}]:sent hop approve with hash {signed_transfer_hash}, from wallet {name}")
+                print(f"[{ctime(time.time())}]:sent hop approve with hash {signed_transfer_hash.hex()}, from wallet {name}")
             except Exception as e:
                 print(f"[{ctime(time.time())}]:error {e} while estimating gas for {name} during hop approve")
             time.sleep(random.uniform(NEXT_TX_MIN_WAIT_TIME,NEXT_TX_MAX_WAIT_TIME))
@@ -177,7 +260,7 @@ def hop_bridge(account, name):
                 tx['gas'] = GAS_LIMIT_FOR_GOERLI_BRIDGE
                 signed_tx = account.sign_transaction(tx)
                 signed_transfer_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
-                print(f"[{ctime(time.time())}]:sent hop bridge transaction with hash {signed_transfer_hash}, from wallet {name}")
+                print(f"[{ctime(time.time())}]:sent hop bridge transaction with hash {signed_transfer_hash.hex()}, from wallet {name}")
             except Exception as e:
                 print(f"[{ctime(time.time())}]:error {e} while estimating gas for {name} during hop bridge")
             time.sleep(random.uniform(NEXT_TX_MIN_WAIT_TIME,NEXT_TX_MAX_WAIT_TIME))
@@ -215,13 +298,40 @@ def geth_bridge(account, name):
                 tx['gas'] = GAS_LIMIT_FOR_GOERLI_BRIDGE
                 signed_tx = account.sign_transaction(tx)
                 signed_transfer_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
-                print(f"[{ctime(time.time())}]:sent geth bridge transaction with hash {signed_transfer_hash}, from wallet {name}")
+                print(f"[{ctime(time.time())}]:sent geth bridge transaction with hash {signed_transfer_hash.hex()}, from wallet {name}")
             except Exception as e:
                 print(f"[{ctime(time.time())}]:error {e} while estimating gas for {name} during geth bridge")
             time.sleep(random.uniform(NEXT_TX_MIN_WAIT_TIME,NEXT_TX_MAX_WAIT_TIME))
             break
         else:
             time.sleep(random.uniform(NEXT_TX_MIN_WAIT_TIME,NEXT_TX_MAX_WAIT_TIME))
+
+def bridge_to_bnb(account, name):
+    while True:
+        address = account.address[2:]
+        if w3.eth.gas_price<gasPriceLimit:
+            print(f"[{ctime(time.time())}]:starting geth to bnb bridge with wallet {name}")
+            tx = {
+                "from": account.address,
+                "to": w3.toChecksumAddress("0x38af6928bf1fd6b3c768752e716c49eb8206e20c"),
+                "gasPrice": int(w3.eth.gas_price*1.2),
+                "nonce": w3.eth.get_transaction_count(account.address),
+                "data": f"0x71ec5c05aa669c4922569c1d33f7a81aaa21813800000000000000000000000013a0c5930c028511dc02665e7285134b6d11a5f4000000000000000000000000{address}0000000000000000000000000000000000000000000000000000000000000000"
+            }
+            try:
+                w3.eth.estimate_gas(tx)
+                tx['gas'] = GAS_LIMIT_FOR_GOERLI_BRIDGE
+                signed_tx = account.sign_transaction(tx)
+                signed_transfer_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+                print(f"[{ctime(time.time())}]:sent geth to bnb bridge with hash {signed_transfer_hash.hex()}, from wallet {name}")
+            except Exception as e:
+                print(f"[{ctime(time.time())}]:error {e} while estimating gas for {name} during geth to bnb bridge")
+            time.sleep(random.uniform(NEXT_TX_MIN_WAIT_TIME,NEXT_TX_MAX_WAIT_TIME))
+            break
+        else:
+            time.sleep(random.uniform(NEXT_TX_MIN_WAIT_TIME,NEXT_TX_MAX_WAIT_TIME))
+
+#-------------------------------------------------------------
 
 account_list = []
 
@@ -237,10 +347,9 @@ print(f"[{ctime(time.time())}]:starting tasks with {len(account_list)} wallets")
 
 
 for account in account_list:
-    dai_mint(account['account'], account['name'])
-    dai_approve(account['account'], account['name'])
-    dai_bridge(account['account'], account['name'])
-    hop_mint(account['account'], account['name'])
-    hop_approve(account['account'], account['name'])
-    hop_bridge(account['account'], account['name'])
-    time.sleep(random.uniform(NEXT_ADDRESS_MIN_WAIT_TIME*60,NEXT_ADDRESS_MAX_WAIT_TIME*60))
+    bnb_bridge(account['account'], account['name'])
+    time_sleep = random.uniform(NEXT_ADDRESS_MIN_WAIT_TIME*60,NEXT_ADDRESS_MAX_WAIT_TIME*60)
+    print(f"sleeping for {time_sleep}")
+    time.sleep(time_sleep)
+
+print("script finished")
