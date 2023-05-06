@@ -10,7 +10,7 @@ import random
 
 node = RPC['goerli']
 node_bnb = RPC['bnb_testnet']
-gasPriceLimit = GAS_PRICE_LIMIT
+gasPriceLimit = Web3.to_wei(GAS_PRICE_LIMIT, 'gwei')
 
 w3 = Web3(Web3.HTTPProvider(node))
 w3_bnb = Web3(Web3.HTTPProvider(node_bnb))
@@ -309,13 +309,16 @@ def geth_bridge(account, name):
 def bridge_to_bnb(account, name):
     while True:
         address = account.address[2:]
+        print(address)
         if w3.eth.gas_price<gasPriceLimit:
             print(f"[{ctime(time.time())}]:starting geth to bnb bridge with wallet {name}")
             tx = {
+                "chainId": 5,
                 "from": account.address,
-                "to": w3.toChecksumAddress("0x38af6928bf1fd6b3c768752e716c49eb8206e20c"),
+                "to": w3.toChecksumAddress("0x7c125C1d515b8945841b3d5144a060115C58725F"),
                 "gasPrice": int(w3.eth.gas_price*1.2),
                 "nonce": w3.eth.get_transaction_count(account.address),
+                "value": w3.to_wei(0.1, 'ether'),
                 "data": f"0x71ec5c05aa669c4922569c1d33f7a81aaa21813800000000000000000000000013a0c5930c028511dc02665e7285134b6d11a5f4000000000000000000000000{address}0000000000000000000000000000000000000000000000000000000000000000"
             }
             try:
@@ -347,7 +350,7 @@ print(f"[{ctime(time.time())}]:starting tasks with {len(account_list)} wallets")
 
 
 for account in account_list:
-    bnb_bridge(account['account'], account['name'])
+    bridge_to_bnb(account['account'], account['name'])
     time_sleep = random.uniform(NEXT_ADDRESS_MIN_WAIT_TIME*60,NEXT_ADDRESS_MAX_WAIT_TIME*60)
     print(f"sleeping for {time_sleep}")
     time.sleep(time_sleep)
