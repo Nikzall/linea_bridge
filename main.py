@@ -309,7 +309,6 @@ def geth_bridge(account, name):
 def bridge_to_bnb(account, name):
     while True:
         address = account.address[2:]
-        print(address)
         if w3.eth.gas_price<gasPriceLimit:
             print(f"[{ctime(time.time())}]:starting geth to bnb bridge with wallet {name}")
             tx = {
@@ -332,7 +331,9 @@ def bridge_to_bnb(account, name):
             time.sleep(random.uniform(NEXT_TX_MIN_WAIT_TIME,NEXT_TX_MAX_WAIT_TIME))
             break
         else:
-            time.sleep(random.uniform(NEXT_TX_MIN_WAIT_TIME,NEXT_TX_MAX_WAIT_TIME))
+            sleep_time = random.uniform(NEXT_TX_MIN_WAIT_TIME,NEXT_TX_MAX_WAIT_TIME)
+            print(f"gas to gigh waiting for {sleep_time}")
+            time.sleep(sleep_time)
 
 #-------------------------------------------------------------
 
